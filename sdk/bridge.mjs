@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import { highlightCode } from "./highlight.mjs";
+
 const protocolOutput = process.stdout;
 const stderr = console.error.bind(console);
 const MAX_STREAMED_BASH_CHARS = 100_000;
@@ -84,12 +86,50 @@ function errorMessage(error) {
   return error instanceof Error ? error.message : String(error);
 }
 
+function textOutput(result) {
+  return (
+    result?.content
+      ?.filter((part) => part.type === "text" && typeof part.text === "string")
+      .map((part) => part.text)
+      .join("\n") || ""
+  );
+}
+
 function conciseError(result) {
-  const lines = result?.content
-    ?.filter((part) => part.type === "text" && typeof part.text === "string")
-    .flatMap((part) => part.text.split(/\r?\n/))
+  const lines = textOutput(result)
+    .split(/\r?\n/)
     .filter((line) => line.trim().length > 0);
-  return lines?.at(-1)?.trim().slice(0, 500) || "Tool failed";
+  return lines.at(-1)?.trim().slice(0, 500) || "Tool failed";
+}
+
+function bashOutput(result, error) {
+  const output = textOutput(result);
+  if (!error) {
+    return output;
+  }
+  if (output === error) {
+    return "";
+  }
+
+  const errorSuffix = `\n\n${error}`;
+  return output.endsWith(errorSuffix) ? output.slice(0, -errorSuffix.length) : output;
+}
+
+function highlightedToolOutput(toolName, args, result, getLanguageFromPath) {
+  if (toolName === "edit") {
+    return highlightCode(result?.details?.diff, "diff");
+  }
+  if (toolName !== "read") {
+    return null;
+  }
+
+  const path = args?.path ?? args?.file_path;
+  if (typeof path !== "string") {
+    return null;
+  }
+  const fileName = path.split(/[\\/]/).at(-1);
+  const language = getLanguageFromPath(path) ?? getLanguageFromPath(fileName);
+  return highlightCode(textOutput(result), language);
 }
 
 function toolSummaryArgs(toolName, args) {
@@ -121,6 +161,7 @@ async function main() {
     createAgentSession,
     DefaultResourceLoader,
     getAgentDir,
+    getLanguageFromPath,
     ModelRegistry,
     SessionManager,
   } = await import("@earendil-works/pi-coding-agent");
@@ -153,6 +194,7 @@ async function main() {
   let activeRequestId = null;
   let activeAssistantMessageId = 0;
   let activeError = null;
+  const activeReadArgs = new Map();
 
   function handleControlLine(line) {
     let command;
@@ -216,6 +258,9 @@ async function main() {
         activeError = null;
       }
     } else if (event.type === "tool_execution_start") {
+      if (event.toolName === "read") {
+        activeReadArgs.set(event.toolCallId, event.args);
+      }
       emit({
         type: "tool_start",
         id: activeRequestId,
@@ -224,12 +269,20 @@ async function main() {
         args: toolSummaryArgs(event.toolName, event.args),
       });
     } else if (event.type === "tool_execution_end") {
+      const error = event.isError ? conciseError(event.result) : null;
+      const args = activeReadArgs.get(event.toolCallId);
+      const highlightedHtml = event.isError
+        ? null
+        : highlightedToolOutput(event.toolName, args, event.result, getLanguageFromPath);
+      activeReadArgs.delete(event.toolCallId);
       emit({
         type: "tool_end",
         id: activeRequestId,
         tool_call_id: event.toolCallId,
         is_error: event.isError,
-        error: event.isError ? conciseError(event.result) : null,
+        error,
+        output: event.toolName === "bash" ? bashOutput(event.result, error) : null,
+        highlighted_html: highlightedHtml,
       });
     }
   });
@@ -264,6 +317,7 @@ async function main() {
     activeRequestId = id;
     activeAssistantMessageId = 0;
     activeError = null;
+    activeReadArgs.clear();
 
     try {
       if (isBash) {
@@ -299,6 +353,7 @@ async function main() {
       activeRequestId = null;
       activeAssistantMessageId = 0;
       activeError = null;
+      activeReadArgs.clear();
     }
   }
 

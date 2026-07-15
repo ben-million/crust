@@ -34,6 +34,7 @@ On macOS, press Command-T to open an independent Pi session in a native window t
 ## Validate
 
 ```sh
+npm test
 cargo fmt --check
 cargo check
 cargo clippy --all-targets -- -D warnings
@@ -41,6 +42,6 @@ cargo clippy --all-targets -- -D warnings
 
 ## Acknowledgments
 
-Spigot uses the neutral palette from [Signal by UNMS](https://signal.un.ms/) with `#FF5700` as its accent. The bundled Inter font is licensed under the [SIL Open Font License](assets/InterVariable-LICENSE.txt).
+Spigot uses the neutral palette from [Signal by UNMS](https://signal.un.ms/) with `#FF5700` as its accent. Syntax colors come from [Modus Operandi and Modus Vivendi](https://github.com/protesilaos/modus-themes). The bundled Inter font is licensed under the [SIL Open Font License](assets/InterVariable-LICENSE.txt).
 
 Spigot's development philosophy is adapted from the [suckless.org philosophy](https://suckless.org/philosophy/).

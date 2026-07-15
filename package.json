@@ -7,9 +7,11 @@
     "node": ">=22.19.0"
   },
   "scripts": {
-    "bridge": "node sdk/bridge.mjs"
+    "bridge": "node sdk/bridge.mjs",
+    "test": "node --test sdk/highlight.test.mjs"
   },
   "dependencies": {
-    "@earendil-works/pi-coding-agent": "0.80.7"
+    "@earendil-works/pi-coding-agent": "0.80.7",
+    "highlight.js": "10.7.3"
   }
 }

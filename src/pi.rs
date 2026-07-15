@@ -77,6 +77,8 @@ pub enum StreamEvent {
         id: String,
         is_error: bool,
         error: Option<String>,
+        output: Option<String>,
+        highlighted_html: Option<String>,
     },
     BashDelta(String),
 }
@@ -299,10 +301,14 @@ impl PiProcess {
                     tool_call_id,
                     is_error,
                     error,
+                    output,
+                    highlighted_html,
                 } if event_id == id => on_event(StreamEvent::ToolEnd {
                     id: tool_call_id,
                     is_error,
                     error,
+                    output,
+                    highlighted_html,
                 }),
                 BridgeEvent::BashDelta {
                     id: event_id,
@@ -451,6 +457,8 @@ enum BridgeEvent {
         tool_call_id: String,
         is_error: bool,
         error: Option<String>,
+        output: Option<String>,
+        highlighted_html: Option<String>,
     },
     BashDelta {
         id: u64,
@@ -651,7 +659,9 @@ mod tests {
             "id": 4,
             "tool_call_id": "call-1",
             "is_error": true,
-            "error": "file missing"
+            "error": "command failed",
+            "output": "partial output",
+            "highlighted_html": "<span>highlighted output</span>"
         }))
         .expect("tool end should deserialize");
 
@@ -673,7 +683,12 @@ mod tests {
                 tool_call_id,
                 is_error: true,
                 error: Some(error),
-            } if tool_call_id == "call-1" && error == "file missing"
+                output: Some(output),
+                highlighted_html: Some(highlighted_html),
+            } if tool_call_id == "call-1"
+                && error == "command failed"
+                && output == "partial output"
+                && highlighted_html == "<span>highlighted output</span>"
         ));
     }
 }

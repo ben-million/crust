@@ -1,6 +1,12 @@
 mod pi;
 
-use dioxus::{desktop::LogicalSize, prelude::*};
+use dioxus::{
+    desktop::{
+        LogicalSize,
+        tao::{dpi::LogicalUnit, window::WindowSizeConstraints},
+    },
+    prelude::*,
+};
 use serde_json::Value;
 use std::rc::Rc;
 
@@ -29,6 +35,24 @@ const APP_STYLE: &str = r#"
         --border: #d3d3d3;
         --error: #cf3535;
         --accent: #ff5700;
+
+        /* Modus Operandi foregrounds. Syntax never owns the block background. */
+        --syntax-text: #000000;
+        --syntax-comment: #595959;
+        --syntax-builtin: #8f0075;
+        --syntax-constant: #0000b0;
+        --syntax-docstring: #2a5045;
+        --syntax-function: #721045;
+        --syntax-function-call: #7b435c;
+        --syntax-keyword: #531ab6;
+        --syntax-preprocessor: #a0132f;
+        --syntax-property: #005e8b;
+        --syntax-regexp: #00663f;
+        --syntax-string: #3548cf;
+        --syntax-type: #005f5f;
+        --syntax-variable: #005e8b;
+        --syntax-added: #005000;
+        --syntax-removed: #8f1313;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -40,6 +64,24 @@ const APP_STYLE: &str = r#"
             --muted: #acadad;
             --border: #444444;
             --error: #ff5757;
+
+            /* Modus Vivendi foregrounds. */
+            --syntax-text: #ffffff;
+            --syntax-comment: #989898;
+            --syntax-builtin: #f78fe7;
+            --syntax-constant: #00bcff;
+            --syntax-docstring: #9ac8e0;
+            --syntax-function: #feacd0;
+            --syntax-function-call: #d09dc0;
+            --syntax-keyword: #b6a0ff;
+            --syntax-preprocessor: #ff7f86;
+            --syntax-property: #00d3d0;
+            --syntax-regexp: #00c06f;
+            --syntax-string: #79a8ff;
+            --syntax-type: #6ae4b9;
+            --syntax-variable: #00d3d0;
+            --syntax-added: #a0e0a0;
+            --syntax-removed: #ffbfbf;
         }
     }
 
@@ -88,10 +130,12 @@ const APP_STYLE: &str = r#"
     .buffer {
         min-width: 0;
         min-height: 0;
-        padding: 8px 2px;
+        padding: 24px 2px;
         overflow: auto;
         scrollbar-color: var(--border) transparent;
         scrollbar-width: thin;
+        -webkit-mask-image: linear-gradient(to bottom, transparent, black 24px, black calc(100% - 24px), transparent);
+        mask-image: linear-gradient(to bottom, transparent, black 24px, black calc(100% - 24px), transparent);
     }
 
     .transcript {
@@ -175,6 +219,106 @@ const APP_STYLE: &str = r#"
         color: var(--muted);
     }
 
+    .highlighted-output,
+    .highlighted-output .hljs-subst,
+    .highlighted-output .hljs-number,
+    .highlighted-output .hljs-operator,
+    .highlighted-output .hljs-punctuation {
+        color: var(--syntax-text);
+    }
+
+    .highlighted-output .hljs-comment {
+        color: var(--syntax-comment);
+        font-style: italic;
+    }
+
+    .highlighted-output .hljs-doctag,
+    .highlighted-output .hljs-quote {
+        color: var(--syntax-docstring);
+        font-style: italic;
+    }
+
+    .highlighted-output .hljs-keyword,
+    .highlighted-output .hljs-name,
+    .highlighted-output .hljs-selector-tag {
+        color: var(--syntax-keyword);
+        font-weight: 700;
+    }
+
+    .highlighted-output .hljs-built_in {
+        color: var(--syntax-builtin);
+        font-weight: 700;
+    }
+
+    .highlighted-output .hljs-literal,
+    .highlighted-output .hljs-symbol,
+    .highlighted-output .hljs-template-tag,
+    .highlighted-output .hljs-bullet {
+        color: var(--syntax-constant);
+    }
+
+    .highlighted-output .hljs-string,
+    .highlighted-output .hljs-meta-string,
+    .highlighted-output .hljs-link {
+        color: var(--syntax-string);
+    }
+
+    .highlighted-output .hljs-regexp {
+        color: var(--syntax-regexp);
+    }
+
+    .highlighted-output .hljs-title,
+    .highlighted-output .hljs-section,
+    .highlighted-output .hljs-selector-id {
+        color: var(--syntax-function);
+    }
+
+    .highlighted-output .hljs-function {
+        color: var(--syntax-function-call);
+    }
+
+    .highlighted-output .hljs-type,
+    .highlighted-output .hljs-class .hljs-title,
+    .highlighted-output .hljs-selector-class,
+    .highlighted-output .hljs-code {
+        color: var(--syntax-type);
+        font-weight: 700;
+    }
+
+    .highlighted-output .hljs-attr,
+    .highlighted-output .hljs-attribute,
+    .highlighted-output .hljs-selector-attr,
+    .highlighted-output .hljs-selector-pseudo {
+        color: var(--syntax-property);
+    }
+
+    .highlighted-output .hljs-variable,
+    .highlighted-output .hljs-template-variable,
+    .highlighted-output .hljs-params {
+        color: var(--syntax-variable);
+    }
+
+    .highlighted-output .hljs-meta,
+    .highlighted-output .hljs-meta-keyword {
+        color: var(--syntax-preprocessor);
+    }
+
+    .highlighted-output .hljs-addition {
+        color: var(--syntax-added);
+    }
+
+    .highlighted-output .hljs-deletion {
+        color: var(--syntax-removed);
+    }
+
+    .highlighted-output .hljs-emphasis {
+        font-style: italic;
+    }
+
+    .highlighted-output .hljs-strong {
+        font-weight: 700;
+    }
+
     .error-message {
         padding: 0 2px;
     }
@@ -244,6 +388,7 @@ enum TranscriptItem {
         state: ToolState,
         error: Option<String>,
         output: String,
+        highlighted_html: Option<String>,
     },
     Error(String),
 }
@@ -364,16 +509,21 @@ fn apply_stream_event(
                 state: ToolState::Active,
                 error: None,
                 output: String::new(),
+                highlighted_html: None,
             });
         }
         pi::StreamEvent::ToolEnd {
             id,
             is_error,
             error,
+            output,
+            highlighted_html,
         } => {
             if let Some(TranscriptItem::Tool {
                 state,
                 error: tool_error,
+                output: tool_output,
+                highlighted_html: tool_highlighted_html,
                 ..
             }) = transcript.iter_mut().rev().find(
                 |item| matches!(item, TranscriptItem::Tool { id: tool_id, .. } if tool_id == &id),
@@ -384,6 +534,10 @@ fn apply_stream_event(
                     ToolState::Complete
                 };
                 *tool_error = error;
+                if let Some(output) = output {
+                    *tool_output = output;
+                }
+                *tool_highlighted_html = highlighted_html;
             }
         }
         pi::StreamEvent::BashDelta(delta) => {
@@ -435,6 +589,7 @@ fn push_shell(transcript: &mut Vec<TranscriptItem>, command: &str) -> String {
         state: ToolState::Active,
         error: None,
         output: String::new(),
+        highlighted_html: None,
     });
     id
 }
@@ -450,6 +605,7 @@ fn update_shell(
         state: tool_state,
         error: tool_error,
         output: tool_output,
+        highlighted_html,
         ..
     }) = transcript
         .iter_mut()
@@ -460,6 +616,7 @@ fn update_shell(
         *tool_error = error;
         if let Some(output) = output {
             *tool_output = output;
+            *highlighted_html = None;
         }
     }
 }
@@ -526,6 +683,7 @@ fn TranscriptEntry(item: TranscriptItem) -> Element {
             state,
             error,
             output,
+            highlighted_html,
             ..
         } => {
             let class = if state == ToolState::Failed {
@@ -551,7 +709,13 @@ fn TranscriptEntry(item: TranscriptItem) -> Element {
                     if let Some(error) = error {
                         div { class: "tool-error", "{error}" }
                     }
-                    if !output.is_empty() {
+                    if let Some(highlighted_html) = highlighted_html {
+                        // This HTML is generated locally by highlight.js, which escapes source text.
+                        pre {
+                            class: "tool-output highlighted-output",
+                            dangerous_inner_html: highlighted_html,
+                        }
+                    } else if !output.is_empty() {
                         pre { class: "tool-output", "{output}" }
                     }
                 }
@@ -566,14 +730,20 @@ fn TranscriptEntry(item: TranscriptItem) -> Element {
 fn window_builder() -> dioxus::desktop::WindowBuilder {
     let builder = dioxus::desktop::WindowBuilder::new()
         .with_title("Spigot")
-        .with_inner_size(LogicalSize::new(1095.0, 760.0))
-        .with_min_inner_size(LogicalSize::new(420.0, 360.0));
+        .with_inner_size(LogicalSize::new(760.0, 760.0))
+        .with_inner_size_constraints(WindowSizeConstraints::new(
+            Some(LogicalUnit::new(420.0).into()),
+            Some(LogicalUnit::new(360.0).into()),
+            Some(LogicalUnit::new(760.0).into()),
+            None,
+        ));
 
     #[cfg(target_os = "macos")]
     let builder = {
         use dioxus::desktop::tao::platform::macos::WindowBuilderExtMacOS;
 
         builder
+            .with_title_hidden(true)
             .with_automatic_window_tabbing(false)
             .with_tabbing_identifier(TABBING_IDENTIFIER)
     };
@@ -695,6 +865,18 @@ fn window_config() -> dioxus::desktop::Config {
 }
 
 #[cfg(target_os = "macos")]
+fn hide_titlebar_separator(window: &dioxus::desktop::DesktopContext) {
+    use dioxus::desktop::tao::platform::macos::WindowExtMacOS;
+    use objc2_app_kit::{NSTitlebarSeparatorStyle, NSWindow};
+
+    unsafe {
+        // The context keeps the Tao window alive, and Dioxus runs components on the main thread.
+        let window = &*window.window.ns_window().cast::<NSWindow>();
+        window.setTitlebarSeparatorStyle(NSTitlebarSeparatorStyle::None);
+    }
+}
+
+#[cfg(target_os = "macos")]
 fn group_window_as_tab(
     source: &dioxus::desktop::DesktopContext,
     tab: &dioxus::desktop::DesktopContext,
@@ -704,15 +886,20 @@ fn group_window_as_tab(
 
     unsafe {
         // Both contexts keep their Tao windows alive, and Dioxus polls this task on the main thread.
-        let source = &*source.window.ns_window().cast::<NSWindow>();
-        let tab = &*tab.window.ns_window().cast::<NSWindow>();
-        source.addTabbedWindow_ordered(tab, NSWindowOrderingMode::Above);
+        let source_window = &*source.window.ns_window().cast::<NSWindow>();
+        let tab_window = &*tab.window.ns_window().cast::<NSWindow>();
+        source_window.addTabbedWindow_ordered(tab_window, NSWindowOrderingMode::Above);
     }
+
+    hide_titlebar_separator(source);
+    hide_titlebar_separator(tab);
 }
 
 #[cfg(target_os = "macos")]
 fn use_native_tabs() {
-    let source = Rc::downgrade(&dioxus::desktop::use_window());
+    let source = dioxus::desktop::use_window();
+    hide_titlebar_separator(&source);
+    let source = Rc::downgrade(&source);
 
     dioxus::desktop::use_muda_event_handler(move |event| {
         let Some(source) = source.upgrade() else {
@@ -923,11 +1110,24 @@ fn App() -> Element {
 #[cfg(test)]
 mod tests {
     use super::{
-        ToolState, TranscriptItem, apply_stream_event, fail_active_tools, plain_thinking,
-        push_shell, render_bash_result, tool_summary, update_shell,
+        APP_STYLE, ToolState, TranscriptItem, apply_stream_event, fail_active_tools,
+        plain_thinking, push_shell, render_bash_result, tool_summary, update_shell,
     };
     use crate::pi::{BashOutcome, StreamEvent};
     use serde_json::json;
+
+    #[test]
+    fn syntax_highlighting_does_not_set_a_background() {
+        let start = APP_STYLE
+            .find("    .highlighted-output")
+            .expect("syntax rules should exist");
+        let end = APP_STYLE[start..]
+            .find("    .error-message")
+            .map(|end| start + end)
+            .expect("syntax rules should end before error styles");
+
+        assert!(!APP_STYLE[start..end].contains("background"));
+    }
 
     #[test]
     fn summarizes_builtin_tool_calls() {
@@ -995,6 +1195,8 @@ mod tests {
                 id: "read-1".to_owned(),
                 is_error: false,
                 error: None,
+                output: None,
+                highlighted_html: Some("<span class=\"hljs-keyword\">fn</span>".to_owned()),
             },
             None,
         );
@@ -1004,6 +1206,8 @@ mod tests {
                 id: "grep-1".to_owned(),
                 is_error: true,
                 error: Some("grep failed".to_owned()),
+                output: None,
+                highlighted_html: None,
             },
             None,
         );
@@ -1023,8 +1227,9 @@ mod tests {
             &transcript[2],
             TranscriptItem::Tool {
                 state: ToolState::Complete,
+                highlighted_html: Some(highlighted_html),
                 ..
-            }
+            } if highlighted_html == "<span class=\"hljs-keyword\">fn</span>"
         ));
         assert!(matches!(
             &transcript[3],
@@ -1115,6 +1320,7 @@ mod tests {
                 state: ToolState::Active,
                 error: None,
                 output: String::new(),
+                highlighted_html: None,
             },
             TranscriptItem::Tool {
                 id: "complete".to_owned(),
@@ -1122,6 +1328,7 @@ mod tests {
                 state: ToolState::Complete,
                 error: None,
                 output: String::new(),
+                highlighted_html: None,
             },
         ];
 
@@ -1147,6 +1354,41 @@ mod tests {
             }
         ));
         assert_eq!(transcript.len(), 2);
+    }
+
+    #[test]
+    fn shows_agent_shell_output() {
+        let mut transcript = Vec::new();
+        apply_stream_event(
+            &mut transcript,
+            StreamEvent::ToolStart {
+                id: "bash-1".to_owned(),
+                name: "bash".to_owned(),
+                args: json!({ "command": "printf hello" }),
+            },
+            None,
+        );
+        apply_stream_event(
+            &mut transcript,
+            StreamEvent::ToolEnd {
+                id: "bash-1".to_owned(),
+                is_error: false,
+                error: None,
+                output: Some("hello".to_owned()),
+                highlighted_html: None,
+            },
+            None,
+        );
+
+        assert!(matches!(
+            &transcript[0],
+            TranscriptItem::Tool {
+                summary,
+                state: ToolState::Complete,
+                output,
+                ..
+            } if summary == "$ printf hello" && output == "hello"
+        ));
     }
 
     #[test]
