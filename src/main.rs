@@ -6,29 +6,35 @@ const APP_STYLE: &str = r#"
     :root {
         color-scheme: light dark;
 
-        /* Modus Operandi */
-        --modus-bg-main: #ffffff;
-        --modus-bg-dim: #f2f2f2;
-        --modus-fg-main: #000000;
-        --modus-fg-dim: #595959;
-        --modus-fg-alt: #193668;
-        --modus-border: #9f9f9f;
-        --modus-warning: #884900;
-        --modus-accent: #0031a9;
+        /* Doric Light */
+        --doric-cursor: #2266bb;
+        --doric-bg-main: #ffffff;
+        --doric-fg-main: #000000;
+        --doric-border: #b0b0b0;
+        --doric-bg-shadow-subtle: #efeff2;
+        --doric-fg-shadow-subtle: #5a6268;
+        --doric-bg-shadow-intense: #a0bcd0;
+        --doric-fg-shadow-intense: #213067;
+        --doric-bg-accent: #d8f1f3;
+        --doric-fg-accent: #084092;
+        --doric-bg-yellow: #f0f0b0;
         --sidebar-width: 136px;
     }
 
     @media (prefers-color-scheme: dark) {
         :root {
-            /* Modus Vivendi */
-            --modus-bg-main: #000000;
-            --modus-bg-dim: #1e1e1e;
-            --modus-fg-main: #ffffff;
-            --modus-fg-dim: #989898;
-            --modus-fg-alt: #c6daff;
-            --modus-border: #646464;
-            --modus-warning: #fec43f;
-            --modus-accent: #00bcff;
+            /* Doric Dark */
+            --doric-cursor: #ccaaee;
+            --doric-bg-main: #000000;
+            --doric-fg-main: #ffffff;
+            --doric-border: #707070;
+            --doric-bg-shadow-subtle: #332d38;
+            --doric-fg-shadow-subtle: #a2a0b2;
+            --doric-bg-shadow-intense: #50447f;
+            --doric-fg-shadow-intense: #cfcff8;
+            --doric-bg-accent: #521e40;
+            --doric-fg-accent: #cda4df;
+            --doric-bg-yellow: #504432;
         }
     }
 
@@ -46,8 +52,8 @@ const APP_STYLE: &str = r#"
     body {
         margin: 0;
         overflow: hidden;
-        background: var(--modus-bg-main);
-        color: var(--modus-fg-main);
+        background: var(--doric-bg-main);
+        color: var(--doric-fg-main);
         font-family: "Berkeley Mono", "Roboto Mono", "Fira Code",
             "SFMono-Regular", Menlo, Consolas, monospace;
         font-size: 14px;
@@ -64,8 +70,8 @@ const APP_STYLE: &str = r#"
     }
 
     ::selection {
-        background: var(--modus-bg-dim);
-        color: var(--modus-fg-main);
+        background: var(--doric-bg-accent);
+        color: var(--doric-fg-main);
     }
 
     .app {
@@ -75,7 +81,7 @@ const APP_STYLE: &str = r#"
         grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
         min-width: 0;
         min-height: 0;
-        background: var(--modus-bg-main);
+        background: var(--doric-bg-main);
     }
 
     .side-tabs {
@@ -94,9 +100,9 @@ const APP_STYLE: &str = r#"
         align-items: center;
         padding: 0 12px;
         overflow: visible;
-        border: 1px solid var(--modus-fg-alt);
-        background: var(--modus-bg-main);
-        color: var(--modus-fg-alt);
+        border: 1px solid var(--doric-border);
+        background: var(--doric-bg-main);
+        color: var(--doric-fg-shadow-subtle);
         white-space: nowrap;
     }
 
@@ -105,7 +111,7 @@ const APP_STYLE: &str = r#"
     }
 
     .side-tab {
-        color: var(--modus-fg-main);
+        color: var(--doric-fg-main);
         font-weight: 700;
     }
 
@@ -116,7 +122,7 @@ const APP_STYLE: &str = r#"
         right: -2px;
         bottom: 1px;
         width: 4px;
-        background: var(--modus-bg-main);
+        background: var(--doric-bg-main);
         content: "";
     }
 
@@ -127,8 +133,8 @@ const APP_STYLE: &str = r#"
         min-height: 0;
         padding: 10px 20px 16px;
         overflow: hidden;
-        border: 1px solid var(--modus-fg-alt);
-        background: var(--modus-bg-main);
+        border: 1px solid var(--doric-border);
+        background: var(--doric-bg-main);
     }
 
     .modeline {
@@ -137,32 +143,32 @@ const APP_STYLE: &str = r#"
         min-width: 0;
         height: 20px;
         overflow: hidden;
-        background: var(--modus-bg-dim);
+        background: var(--doric-bg-shadow-intense);
+        color: var(--doric-fg-shadow-intense);
         line-height: 20px;
         white-space: nowrap;
     }
 
     .modeline-status {
         overflow: hidden;
-        background: var(--modus-fg-alt);
-        color: var(--modus-bg-main);
+        background: var(--doric-fg-shadow-intense);
+        color: var(--doric-bg-main);
         text-align: center;
     }
 
     .modeline-status.is-running {
-        background: var(--modus-warning);
-        color: var(--modus-bg-main);
+        background: var(--doric-bg-yellow);
+        color: var(--doric-fg-main);
     }
 
     .modeline-status.is-shell {
-        background: var(--modus-accent);
-        color: var(--modus-bg-main);
+        background: var(--doric-bg-accent);
+        color: var(--doric-fg-accent);
     }
 
     .modeline-name {
         padding-left: 1.1ch;
         overflow: hidden;
-        color: var(--modus-fg-main);
         font-weight: 700;
         text-overflow: ellipsis;
     }
@@ -171,13 +177,11 @@ const APP_STYLE: &str = r#"
         min-width: 0;
         padding-left: 1ch;
         overflow: hidden;
-        color: var(--modus-fg-main);
         text-overflow: ellipsis;
     }
 
     .modeline-secondary {
         padding: 0 1ch;
-        color: var(--modus-fg-alt);
     }
 
     .buffer {
@@ -186,8 +190,8 @@ const APP_STYLE: &str = r#"
         min-height: 0;
         padding: 6px 0 12px;
         overflow: auto;
-        background: var(--modus-bg-main);
-        scrollbar-color: var(--modus-border) transparent;
+        background: var(--doric-bg-main);
+        scrollbar-color: var(--doric-border) transparent;
         scrollbar-gutter: stable;
         scrollbar-width: thin;
     }
@@ -198,7 +202,7 @@ const APP_STYLE: &str = r#"
     }
 
     .buffer::-webkit-scrollbar-thumb {
-        background: var(--modus-border);
+        background: var(--doric-border);
     }
 
     .buffer::-webkit-scrollbar-track {
@@ -210,7 +214,7 @@ const APP_STYLE: &str = r#"
         margin: 0;
         overflow-wrap: anywhere;
         white-space: pre-wrap;
-        color: var(--modus-fg-alt);
+        color: var(--doric-fg-main);
         font: inherit;
     }
 
@@ -218,13 +222,13 @@ const APP_STYLE: &str = r#"
         display: inline-flex;
         align-items: center;
         gap: 1ch;
-        color: var(--modus-fg-alt);
+        color: var(--doric-fg-main);
     }
 
     .cursor {
         width: 0.72ch;
         height: 1.05em;
-        background: var(--modus-fg-alt);
+        background: var(--doric-cursor);
         animation: cursor-blink 1s steps(1, end) infinite;
     }
 
@@ -239,12 +243,12 @@ const APP_STYLE: &str = r#"
         inset: 0;
         display: grid;
         place-content: center;
-        color: var(--modus-fg-dim);
+        color: var(--doric-fg-shadow-subtle);
         text-align: left;
     }
 
     .splash-title {
-        color: var(--modus-fg-main);
+        color: var(--doric-fg-main);
         font-weight: 700;
     }
 
@@ -253,18 +257,18 @@ const APP_STYLE: &str = r#"
         grid-template-columns: minmax(0, 1fr) auto;
         min-width: 0;
         min-height: 40px;
-        border: 1px solid var(--modus-fg-alt);
-        background: var(--modus-bg-main);
+        border: 1px solid var(--doric-border);
+        background: var(--doric-bg-main);
     }
 
     .prompt.is-shell {
-        border-color: var(--modus-accent);
+        border-color: var(--doric-fg-accent);
     }
 
     .prompt.is-shell button:not(:disabled) {
-        border-left-color: var(--modus-accent);
-        background: var(--modus-accent);
-        color: var(--modus-bg-main);
+        border-left-color: var(--doric-border);
+        background: var(--doric-bg-accent);
+        color: var(--doric-fg-accent);
     }
 
     .prompt input {
@@ -274,42 +278,43 @@ const APP_STYLE: &str = r#"
         border-radius: 0;
         outline: 0;
         background: transparent;
-        color: var(--modus-fg-main);
-        caret-color: var(--modus-fg-alt);
+        color: var(--doric-fg-main);
+        caret-color: var(--doric-cursor);
     }
 
     .prompt input::placeholder {
-        color: var(--modus-fg-dim);
+        color: var(--doric-fg-shadow-subtle);
         opacity: 1;
     }
 
     .prompt input:focus-visible {
-        box-shadow: inset 0 -2px var(--modus-accent);
+        box-shadow: inset 0 -2px var(--doric-fg-accent);
     }
 
     .prompt button {
         min-width: 72px;
         padding: 0 12px;
         border: 0;
-        border-left: 1px solid var(--modus-fg-alt);
+        border-left: 1px solid var(--doric-border);
         border-radius: 0;
-        background: var(--modus-fg-alt);
-        color: var(--modus-bg-main);
+        background: var(--doric-bg-shadow-intense);
+        color: var(--doric-fg-shadow-intense);
         cursor: pointer;
     }
 
     .prompt button:not(:disabled):hover {
-        background: var(--modus-fg-main);
+        background: var(--doric-bg-accent);
+        color: var(--doric-fg-accent);
     }
 
     .prompt button:focus-visible {
-        outline: 2px solid var(--modus-accent);
+        outline: 2px solid var(--doric-fg-accent);
         outline-offset: -4px;
     }
 
     .prompt button:disabled {
-        background: var(--modus-bg-dim);
-        color: var(--modus-fg-alt);
+        background: var(--doric-bg-shadow-subtle);
+        color: var(--doric-fg-shadow-subtle);
         cursor: default;
     }
 
