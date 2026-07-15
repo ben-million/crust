@@ -91,7 +91,6 @@ const APP_STYLE: &str = r#"
 
     .user-message,
     .assistant-message,
-    .thinking-message,
     .tool-output {
         margin: 0;
         overflow-wrap: anywhere;
@@ -113,10 +112,7 @@ const APP_STYLE: &str = r#"
     }
 
     .thinking-message {
-        padding: 0 2px 0 14px;
-        border-left: 2px solid var(--border);
-        color: var(--muted);
-        font-size: 14px;
+        font-style: italic;
     }
 
     .tool {
@@ -501,7 +497,7 @@ fn TranscriptEntry(item: TranscriptItem) -> Element {
             pre { class: "assistant-message", "{text}" }
         },
         TranscriptItem::Thinking { text, .. } => rsx! {
-            pre { class: "thinking-message", "Thinking\n{text}" }
+            pre { class: "assistant-message thinking-message", "Thinking\n{text}" }
         },
         TranscriptItem::Tool {
             summary,
