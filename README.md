@@ -39,6 +39,6 @@ cargo clippy --all-targets -- -D warnings
 
 ## Acknowledgments
 
-Spigot uses the [Modus Operandi and Modus Vivendi](https://github.com/protesilaos/modus-themes) color palettes for its light and dark appearances.
+Spigot uses the [Doric Marble and Doric Obsidian](https://github.com/protesilaos/doric-themes) color palettes for its light and dark appearances.
 
 Spigot's development philosophy is adapted from the [suckless.org philosophy](https://suckless.org/philosophy/).

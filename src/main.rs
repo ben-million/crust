@@ -6,32 +6,32 @@ const APP_STYLE: &str = r#"
     :root {
         color-scheme: light dark;
 
-        /* Doric Light */
-        --doric-cursor: #2266bb;
-        --doric-bg-main: #ffffff;
-        --doric-fg-main: #000000;
-        --doric-border: #b0b0b0;
-        --doric-fg-shadow-subtle: #5a6268;
-        --doric-bg-shadow-intense: #a0bcd0;
-        --doric-fg-shadow-intense: #213067;
-        --doric-bg-accent: #d8f1f3;
-        --doric-fg-accent: #084092;
-        --doric-bg-yellow: #f0f0b0;
+        /* Doric Marble */
+        --doric-cursor: #403030;
+        --doric-bg-main: #ededed;
+        --doric-fg-main: #202020;
+        --doric-border: #9a9a9a;
+        --doric-fg-shadow-subtle: #595959;
+        --doric-bg-shadow-intense: #b0b0b0;
+        --doric-fg-shadow-intense: #404040;
+        --doric-bg-accent: #e5d7c5;
+        --doric-fg-accent: #603d3a;
+        --doric-bg-yellow: #e9e0a0;
         --sidebar-width: 136px;
     }
 
     @media (prefers-color-scheme: dark) {
         :root {
-            /* Doric Dark */
-            --doric-cursor: #ccaaee;
-            --doric-bg-main: #000000;
-            --doric-fg-main: #ffffff;
-            --doric-border: #707070;
-            --doric-fg-shadow-subtle: #a2a0b2;
-            --doric-bg-shadow-intense: #50447f;
-            --doric-fg-shadow-intense: #cfcff8;
-            --doric-bg-accent: #521e40;
-            --doric-fg-accent: #cda4df;
+            /* Doric Obsidian */
+            --doric-cursor: #eeddbb;
+            --doric-bg-main: #181818;
+            --doric-fg-main: #e7e7e7;
+            --doric-border: #727272;
+            --doric-fg-shadow-subtle: #969696;
+            --doric-bg-shadow-intense: #505050;
+            --doric-fg-shadow-intense: #b0b0b0;
+            --doric-bg-accent: #432f2a;
+            --doric-fg-accent: #b59487;
             --doric-bg-yellow: #504432;
         }
     }
