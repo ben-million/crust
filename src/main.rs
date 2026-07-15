@@ -5,41 +5,30 @@ use dioxus::{desktop::LogicalSize, prelude::*};
 const APP_STYLE: &str = r#"
     :root {
         color-scheme: light dark;
-        --nano-background: #ffffff;
-        --nano-foreground: #37474f;
-        --nano-ink: #173541;
-        --nano-text: #556e79;
-        --nano-muted-text: #657983;
-        --nano-highlight: #fafafa;
-        --nano-critical: #ff6f00;
-        --nano-critical-text: #173541;
-        --nano-salient: #673ab7;
-        --nano-salient-text: #ffffff;
-        --nano-strong: #0e2a35;
-        --nano-subtle: #eceff1;
-        --nano-faded: #b0bec5;
-        --nano-badge: #556e79;
-        --nano-badge-text: #ffffff;
+
+        /* Modus Operandi */
+        --modus-bg-main: #ffffff;
+        --modus-bg-dim: #f2f2f2;
+        --modus-fg-main: #000000;
+        --modus-fg-dim: #595959;
+        --modus-fg-alt: #193668;
+        --modus-border: #9f9f9f;
+        --modus-warning: #884900;
+        --modus-accent: #0031a9;
         --sidebar-width: 136px;
     }
 
     @media (prefers-color-scheme: dark) {
         :root {
-            --nano-background: #2e3440;
-            --nano-foreground: #eceff4;
-            --nano-ink: #81a1c1;
-            --nano-text: #d8dee9;
-            --nano-muted-text: #94a4b8;
-            --nano-highlight: #3b4252;
-            --nano-critical: #ebcb8b;
-            --nano-critical-text: #2e3440;
-            --nano-salient: #81a1c1;
-            --nano-salient-text: #2e3440;
-            --nano-strong: #eceff4;
-            --nano-subtle: #434c5e;
-            --nano-faded: #677691;
-            --nano-badge: #81a1c1;
-            --nano-badge-text: #2e3440;
+            /* Modus Vivendi */
+            --modus-bg-main: #000000;
+            --modus-bg-dim: #1e1e1e;
+            --modus-fg-main: #ffffff;
+            --modus-fg-dim: #989898;
+            --modus-fg-alt: #c6daff;
+            --modus-border: #646464;
+            --modus-warning: #fec43f;
+            --modus-accent: #00bcff;
         }
     }
 
@@ -57,8 +46,8 @@ const APP_STYLE: &str = r#"
     body {
         margin: 0;
         overflow: hidden;
-        background: var(--nano-background);
-        color: var(--nano-foreground);
+        background: var(--modus-bg-main);
+        color: var(--modus-fg-main);
         font-family: "Berkeley Mono", "Roboto Mono", "Fira Code",
             "SFMono-Regular", Menlo, Consolas, monospace;
         font-size: 14px;
@@ -75,8 +64,8 @@ const APP_STYLE: &str = r#"
     }
 
     ::selection {
-        background: var(--nano-subtle);
-        color: var(--nano-strong);
+        background: var(--modus-bg-dim);
+        color: var(--modus-fg-main);
     }
 
     .app {
@@ -86,7 +75,7 @@ const APP_STYLE: &str = r#"
         grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
         min-width: 0;
         min-height: 0;
-        background: var(--nano-background);
+        background: var(--modus-bg-main);
     }
 
     .side-tabs {
@@ -105,9 +94,9 @@ const APP_STYLE: &str = r#"
         align-items: center;
         padding: 0 12px;
         overflow: visible;
-        border: 1px solid var(--nano-ink);
-        background: var(--nano-background);
-        color: var(--nano-text);
+        border: 1px solid var(--modus-fg-alt);
+        background: var(--modus-bg-main);
+        color: var(--modus-fg-alt);
         white-space: nowrap;
     }
 
@@ -116,7 +105,7 @@ const APP_STYLE: &str = r#"
     }
 
     .side-tab {
-        color: var(--nano-strong);
+        color: var(--modus-fg-main);
         font-weight: 700;
     }
 
@@ -127,7 +116,7 @@ const APP_STYLE: &str = r#"
         right: -2px;
         bottom: 1px;
         width: 4px;
-        background: var(--nano-background);
+        background: var(--modus-bg-main);
         content: "";
     }
 
@@ -138,8 +127,8 @@ const APP_STYLE: &str = r#"
         min-height: 0;
         padding: 10px 20px 16px;
         overflow: hidden;
-        border: 1px solid var(--nano-ink);
-        background: var(--nano-background);
+        border: 1px solid var(--modus-fg-alt);
+        background: var(--modus-bg-main);
     }
 
     .modeline {
@@ -148,32 +137,32 @@ const APP_STYLE: &str = r#"
         min-width: 0;
         height: 20px;
         overflow: hidden;
-        background: var(--nano-subtle);
+        background: var(--modus-bg-dim);
         line-height: 20px;
         white-space: nowrap;
     }
 
     .modeline-status {
         overflow: hidden;
-        background: var(--nano-badge);
-        color: var(--nano-badge-text);
+        background: var(--modus-fg-alt);
+        color: var(--modus-bg-main);
         text-align: center;
     }
 
     .modeline-status.is-running {
-        background: var(--nano-critical);
-        color: var(--nano-critical-text);
+        background: var(--modus-warning);
+        color: var(--modus-bg-main);
     }
 
     .modeline-status.is-shell {
-        background: var(--nano-salient);
-        color: var(--nano-salient-text);
+        background: var(--modus-accent);
+        color: var(--modus-bg-main);
     }
 
     .modeline-name {
         padding-left: 1.1ch;
         overflow: hidden;
-        color: var(--nano-strong);
+        color: var(--modus-fg-main);
         font-weight: 700;
         text-overflow: ellipsis;
     }
@@ -182,13 +171,13 @@ const APP_STYLE: &str = r#"
         min-width: 0;
         padding-left: 1ch;
         overflow: hidden;
-        color: var(--nano-foreground);
+        color: var(--modus-fg-main);
         text-overflow: ellipsis;
     }
 
     .modeline-secondary {
         padding: 0 1ch;
-        color: var(--nano-text);
+        color: var(--modus-fg-alt);
     }
 
     .buffer {
@@ -197,8 +186,8 @@ const APP_STYLE: &str = r#"
         min-height: 0;
         padding: 6px 0 12px;
         overflow: auto;
-        background: var(--nano-background);
-        scrollbar-color: var(--nano-faded) transparent;
+        background: var(--modus-bg-main);
+        scrollbar-color: var(--modus-border) transparent;
         scrollbar-gutter: stable;
         scrollbar-width: thin;
     }
@@ -209,7 +198,7 @@ const APP_STYLE: &str = r#"
     }
 
     .buffer::-webkit-scrollbar-thumb {
-        background: var(--nano-faded);
+        background: var(--modus-border);
     }
 
     .buffer::-webkit-scrollbar-track {
@@ -221,7 +210,7 @@ const APP_STYLE: &str = r#"
         margin: 0;
         overflow-wrap: anywhere;
         white-space: pre-wrap;
-        color: var(--nano-text);
+        color: var(--modus-fg-alt);
         font: inherit;
     }
 
@@ -229,13 +218,13 @@ const APP_STYLE: &str = r#"
         display: inline-flex;
         align-items: center;
         gap: 1ch;
-        color: var(--nano-text);
+        color: var(--modus-fg-alt);
     }
 
     .cursor {
         width: 0.72ch;
         height: 1.05em;
-        background: var(--nano-text);
+        background: var(--modus-fg-alt);
         animation: cursor-blink 1s steps(1, end) infinite;
     }
 
@@ -250,12 +239,12 @@ const APP_STYLE: &str = r#"
         inset: 0;
         display: grid;
         place-content: center;
-        color: var(--nano-muted-text);
+        color: var(--modus-fg-dim);
         text-align: left;
     }
 
     .splash-title {
-        color: var(--nano-strong);
+        color: var(--modus-fg-main);
         font-weight: 700;
     }
 
@@ -264,18 +253,18 @@ const APP_STYLE: &str = r#"
         grid-template-columns: minmax(0, 1fr) auto;
         min-width: 0;
         min-height: 40px;
-        border: 1px solid var(--nano-ink);
-        background: var(--nano-background);
+        border: 1px solid var(--modus-fg-alt);
+        background: var(--modus-bg-main);
     }
 
     .prompt.is-shell {
-        border-color: var(--nano-salient);
+        border-color: var(--modus-accent);
     }
 
     .prompt.is-shell button:not(:disabled) {
-        border-left-color: var(--nano-salient);
-        background: var(--nano-salient);
-        color: var(--nano-salient-text);
+        border-left-color: var(--modus-accent);
+        background: var(--modus-accent);
+        color: var(--modus-bg-main);
     }
 
     .prompt input {
@@ -285,42 +274,42 @@ const APP_STYLE: &str = r#"
         border-radius: 0;
         outline: 0;
         background: transparent;
-        color: var(--nano-strong);
-        caret-color: var(--nano-ink);
+        color: var(--modus-fg-main);
+        caret-color: var(--modus-fg-alt);
     }
 
     .prompt input::placeholder {
-        color: var(--nano-muted-text);
+        color: var(--modus-fg-dim);
         opacity: 1;
     }
 
     .prompt input:focus-visible {
-        box-shadow: inset 0 -2px var(--nano-salient);
+        box-shadow: inset 0 -2px var(--modus-accent);
     }
 
     .prompt button {
         min-width: 72px;
         padding: 0 12px;
         border: 0;
-        border-left: 1px solid var(--nano-ink);
+        border-left: 1px solid var(--modus-fg-alt);
         border-radius: 0;
-        background: var(--nano-ink);
-        color: var(--nano-background);
+        background: var(--modus-fg-alt);
+        color: var(--modus-bg-main);
         cursor: pointer;
     }
 
     .prompt button:not(:disabled):hover {
-        background: var(--nano-strong);
+        background: var(--modus-fg-main);
     }
 
     .prompt button:focus-visible {
-        outline: 2px solid var(--nano-salient);
+        outline: 2px solid var(--modus-accent);
         outline-offset: -4px;
     }
 
     .prompt button:disabled {
-        background: var(--nano-subtle);
-        color: var(--nano-text);
+        background: var(--modus-bg-dim);
+        color: var(--modus-fg-alt);
         cursor: default;
     }
 
@@ -430,7 +419,7 @@ fn main() {
         .with_cfg(
             dioxus::desktop::Config::new().with_window(
                 dioxus::desktop::WindowBuilder::new()
-                    .with_title("Crust")
+                    .with_title("Spigot")
                     .with_inner_size(LogicalSize::new(1095.0, 760.0))
                     .with_min_inner_size(LogicalSize::new(420.0, 360.0)),
             ),
@@ -450,7 +439,10 @@ fn App() -> Element {
     let input_text = input();
     let is_running = running();
     let is_running_bash = running_bash();
-    let is_bash_input = input_text.trim_start().starts_with('!');
+    let is_bash_input = matches!(
+        pi::UserRequest::from_input(input_text.clone()),
+        pi::UserRequest::Bash { .. }
+    );
     let submit_disabled = is_running || input_text.trim().is_empty();
     let submit_label = if is_running_bash {
         "Running…"
@@ -493,13 +485,13 @@ fn App() -> Element {
         style { {APP_STYLE} }
         main { class: "app",
             aside { class: "side-tabs", aria_label: "Buffers",
-                div { class: "side-cell side-brand", "CRUST" }
-                div { class: "side-cell side-tab", "crust.chat" }
+                div { class: "side-cell side-brand", "SPIGOT" }
+                div { class: "side-cell side-tab", "spigot.chat" }
             }
-            section { class: "workspace", aria_label: "Crust chat buffer",
+            section { class: "workspace", aria_label: "Spigot chat buffer",
                 header { class: "modeline",
                     span { class: "{status_class}", "{status_badge}" }
-                    span { class: "modeline-name", "Crust" }
+                    span { class: "modeline-name", "Spigot" }
                     span { class: "modeline-mode", "{mode_label}" }
                     span { class: "modeline-secondary", "{status_label}" }
                 }

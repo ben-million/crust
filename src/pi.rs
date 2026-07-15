@@ -131,7 +131,7 @@ pub async fn run(
 }
 
 fn configured_prompt_timeout() -> Duration {
-    std::env::var("CRUST_PROMPT_TIMEOUT_SECS")
+    std::env::var("SPIGOT_PROMPT_TIMEOUT_SECS")
         .ok()
         .and_then(|value| value.parse::<u64>().ok())
         .filter(|seconds| *seconds > 0)
@@ -148,7 +148,7 @@ pub struct PiProcess {
 
 impl PiProcess {
     async fn start() -> Result<Self, String> {
-        let node = std::env::var_os("CRUST_NODE").unwrap_or_else(|| OsString::from("node"));
+        let node = std::env::var_os("SPIGOT_NODE").unwrap_or_else(|| OsString::from("node"));
         let project_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let bridge = project_dir.join("sdk/bridge.mjs");
 
@@ -158,12 +158,11 @@ impl PiProcess {
             .current_dir(&project_dir)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::inherit())
-            .kill_on_drop(true);
+            .stderr(Stdio::inherit());
 
         let mut child = command.spawn().map_err(|error| {
             format!(
-                "could not start Node.js (`{}`): {error}. Install Node.js 22.19+ or set CRUST_NODE",
+                "could not start Node.js (`{}`): {error}. Install Node.js 22.19+ or set SPIGOT_NODE",
                 node.to_string_lossy()
             )
         })?;

@@ -1,5 +1,5 @@
 {
-  "name": "crust-pi-sdk-bridge",
+  "name": "spigot-pi-sdk-bridge",
   "version": "0.1.0",
   "private": true,
   "type": "module",

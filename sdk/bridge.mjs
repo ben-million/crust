@@ -5,6 +5,22 @@ const stderr = console.error.bind(console);
 const MAX_STREAMED_BASH_CHARS = 100_000;
 const BASH_FLUSH_INTERVAL_MS = 16;
 
+// Before SDK initialization completes there is nothing to dispose. If the
+// Rust parent disappears during startup, exit immediately rather than orphaning
+// the bridge. This handler is replaced with graceful cleanup once ready.
+let parentCloseHandler = () => process.exit(0);
+let inputHandler = null;
+let pendingInput = "";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", (chunk) => {
+  if (inputHandler) {
+    inputHandler(chunk);
+  } else {
+    pendingInput += chunk;
+  }
+});
+process.stdin.once("end", () => parentCloseHandler());
+
 // stdout is reserved for the JSONL protocol consumed by the Rust process.
 for (const method of ["log", "info", "debug", "warn"]) {
   console[method] = stderr;
@@ -76,7 +92,7 @@ async function main() {
     SessionManager,
   } = await import("@earendil-works/pi-coding-agent");
 
-  const cwd = process.env.CRUST_AGENT_CWD || process.cwd();
+  const cwd = process.env.SPIGOT_AGENT_CWD || process.cwd();
   const authStorage = AuthStorage.create();
   const modelRegistry = ModelRegistry.create(authStorage);
   const { session, modelFallbackMessage } = await createAgentSession({
@@ -197,8 +213,7 @@ async function main() {
 
   let pending = Promise.resolve();
   let buffer = "";
-  process.stdin.setEncoding("utf8");
-  process.stdin.on("data", (chunk) => {
+  inputHandler = (chunk) => {
     buffer += chunk;
 
     while (true) {
@@ -216,7 +231,12 @@ async function main() {
         pending = pending.then(() => handleLine(line));
       }
     }
-  });
+  };
+  if (pendingInput.length > 0) {
+    const input = pendingInput;
+    pendingInput = "";
+    inputHandler(input);
+  }
 
   let disposed = false;
   const dispose = () => {
@@ -232,12 +252,14 @@ async function main() {
     process.exit(0);
   };
 
-  process.stdin.on("end", () => {
+  parentCloseHandler = () => {
+    // Abort active work immediately so a detached shell process cannot outlive
+    // Spigot, then let the request handler and protocol output unwind.
+    dispose();
     pending.finally(async () => {
       await protocolWrites;
-      dispose();
     });
-  });
+  };
   process.once("SIGINT", shutdown);
   process.once("SIGTERM", shutdown);
 
