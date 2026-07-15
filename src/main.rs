@@ -58,8 +58,8 @@ const APP_STYLE: &str = r#"
     }
 
     ::selection {
-        background: var(--accent);
-        color: #ffffff;
+        background: rgb(255 87 0 / 16%);
+        color: var(--accent);
     }
 
     .app {
@@ -91,6 +91,7 @@ const APP_STYLE: &str = r#"
 
     .user-message,
     .assistant-message,
+    .thinking-message,
     .tool-output {
         margin: 0;
         overflow-wrap: anywhere;
@@ -109,6 +110,13 @@ const APP_STYLE: &str = r#"
     .assistant-message {
         padding: 0 2px;
         color: var(--text);
+    }
+
+    .thinking-message {
+        padding: 0 2px 0 14px;
+        border-left: 2px solid var(--border);
+        color: var(--muted);
+        font-size: 14px;
     }
 
     .tool {
@@ -135,6 +143,10 @@ const APP_STYLE: &str = r#"
         flex: 0 0 7px;
         border-radius: 50%;
         background: var(--accent);
+    }
+
+    .shell-prompt {
+        color: var(--accent);
     }
 
     .tool.is-error .tool-header,
@@ -214,6 +226,10 @@ enum ToolState {
 enum TranscriptItem {
     User(String),
     Assistant(String),
+    Thinking {
+        id: String,
+        text: String,
+    },
     Tool {
         id: String,
         summary: String,
@@ -288,6 +304,43 @@ fn apply_stream_event(
     match event {
         pi::StreamEvent::AssistantStart => {
             transcript.push(TranscriptItem::Assistant(String::new()));
+        }
+        pi::StreamEvent::ThinkingStart { id } => {
+            if transcript.last().is_some_and(
+                |item| matches!(item, TranscriptItem::Assistant(text) if text.is_empty()),
+            ) {
+                transcript.pop();
+            }
+            transcript.push(TranscriptItem::Thinking {
+                id,
+                text: String::new(),
+            });
+        }
+        pi::StreamEvent::ThinkingDelta { id, delta } => {
+            if let Some(TranscriptItem::Thinking { text, .. }) = transcript.iter_mut().rev().find(
+                |item| matches!(item, TranscriptItem::Thinking { id: thinking_id, .. } if thinking_id == &id),
+            ) {
+                text.push_str(&delta);
+            } else {
+                transcript.push(TranscriptItem::Thinking { id, text: delta });
+            }
+        }
+        pi::StreamEvent::ThinkingEnd { id, content } => {
+            if content.is_empty() {
+                if let Some(index) = transcript.iter().rposition(
+                    |item| matches!(item, TranscriptItem::Thinking { id: thinking_id, text } if thinking_id == &id && text.is_empty()),
+                ) {
+                    transcript.remove(index);
+                }
+            } else if let Some(TranscriptItem::Thinking { text, .. }) = transcript
+                .iter_mut()
+                .rev()
+                .find(|item| matches!(item, TranscriptItem::Thinking { id: thinking_id, .. } if thinking_id == &id))
+            {
+                *text = content;
+            } else {
+                transcript.push(TranscriptItem::Thinking { id, text: content });
+            }
         }
         pi::StreamEvent::TextDelta(delta) => {
             if let Some(TranscriptItem::Assistant(text)) = transcript.last_mut() {
@@ -447,6 +500,9 @@ fn TranscriptEntry(item: TranscriptItem) -> Element {
         TranscriptItem::Assistant(text) => rsx! {
             pre { class: "assistant-message", "{text}" }
         },
+        TranscriptItem::Thinking { text, .. } => rsx! {
+            pre { class: "thinking-message", "Thinking\n{text}" }
+        },
         TranscriptItem::Tool {
             summary,
             state,
@@ -465,7 +521,14 @@ fn TranscriptEntry(item: TranscriptItem) -> Element {
                         if state == ToolState::Active {
                             span { class: "tool-dot", aria_hidden: "true" }
                         }
-                        span { "{summary}" }
+                        if let Some(command) = summary.strip_prefix("$ ") {
+                            span {
+                                span { class: "shell-prompt", "$" }
+                                " {command}"
+                            }
+                        } else {
+                            span { "{summary}" }
+                        }
                     }
                     if let Some(error) = error {
                         div { class: "tool-error", "{error}" }
@@ -585,7 +648,11 @@ fn App() -> Element {
                         let result = pi::run(&client, request, |event| {
                             if matches!(
                                 &event,
-                                pi::StreamEvent::TextDelta(delta) if !delta.is_empty()
+                                pi::StreamEvent::TextDelta(delta)
+                                    | pi::StreamEvent::ThinkingDelta { delta, .. }
+                                    | pi::StreamEvent::ThinkingEnd {
+                                        content: delta, ..
+                                    } if !delta.is_empty()
                             ) || matches!(event, pi::StreamEvent::ToolStart { .. })
                             {
                                 received_output = true;
@@ -777,6 +844,60 @@ mod tests {
         assert_eq!(
             transcript[4],
             TranscriptItem::Assistant("Finished.".to_owned())
+        );
+    }
+
+    #[test]
+    fn streams_thinking_before_assistant_text() {
+        let mut transcript = vec![TranscriptItem::User("Solve it".to_owned())];
+        apply_stream_event(&mut transcript, StreamEvent::AssistantStart, None);
+        apply_stream_event(
+            &mut transcript,
+            StreamEvent::ThinkingStart {
+                id: "thinking-1".to_owned(),
+            },
+            None,
+        );
+        apply_stream_event(
+            &mut transcript,
+            StreamEvent::ThinkingDelta {
+                id: "thinking-1".to_owned(),
+                delta: "Checking".to_owned(),
+            },
+            None,
+        );
+        apply_stream_event(
+            &mut transcript,
+            StreamEvent::ThinkingDelta {
+                id: "thinking-1".to_owned(),
+                delta: " the details.".to_owned(),
+            },
+            None,
+        );
+        apply_stream_event(
+            &mut transcript,
+            StreamEvent::TextDelta("Done.".to_owned()),
+            None,
+        );
+        apply_stream_event(
+            &mut transcript,
+            StreamEvent::ThinkingEnd {
+                id: "thinking-1".to_owned(),
+                content: "Checked the details.".to_owned(),
+            },
+            None,
+        );
+
+        assert_eq!(
+            transcript,
+            vec![
+                TranscriptItem::User("Solve it".to_owned()),
+                TranscriptItem::Thinking {
+                    id: "thinking-1".to_owned(),
+                    text: "Checked the details.".to_owned(),
+                },
+                TranscriptItem::Assistant("Done.".to_owned()),
+            ]
         );
     }
 

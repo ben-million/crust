@@ -56,6 +56,17 @@ impl UserRequest {
 #[derive(Clone, Debug, PartialEq)]
 pub enum StreamEvent {
     AssistantStart,
+    ThinkingStart {
+        id: String,
+    },
+    ThinkingDelta {
+        id: String,
+        delta: String,
+    },
+    ThinkingEnd {
+        id: String,
+        content: String,
+    },
     TextDelta(String),
     ToolStart {
         id: String,
@@ -249,6 +260,26 @@ impl PiProcess {
                 BridgeEvent::AssistantStart { id: event_id } if event_id == id => {
                     on_event(StreamEvent::AssistantStart);
                 }
+                BridgeEvent::ThinkingStart {
+                    id: event_id,
+                    thinking_id,
+                } if event_id == id => on_event(StreamEvent::ThinkingStart { id: thinking_id }),
+                BridgeEvent::ThinkingDelta {
+                    id: event_id,
+                    thinking_id,
+                    delta,
+                } if event_id == id => on_event(StreamEvent::ThinkingDelta {
+                    id: thinking_id,
+                    delta,
+                }),
+                BridgeEvent::ThinkingEnd {
+                    id: event_id,
+                    thinking_id,
+                    content,
+                } if event_id == id => on_event(StreamEvent::ThinkingEnd {
+                    id: thinking_id,
+                    content,
+                }),
                 BridgeEvent::TextDelta {
                     id: event_id,
                     delta,
@@ -391,6 +422,20 @@ enum BridgeEvent {
     AssistantStart {
         id: u64,
     },
+    ThinkingStart {
+        id: u64,
+        thinking_id: String,
+    },
+    ThinkingDelta {
+        id: u64,
+        thinking_id: String,
+        delta: String,
+    },
+    ThinkingEnd {
+        id: u64,
+        thinking_id: String,
+        content: String,
+    },
     TextDelta {
         id: u64,
         delta: String,
@@ -528,22 +573,65 @@ mod tests {
     }
 
     #[test]
-    fn deserializes_stream_boundaries_and_bash_deltas() {
-        let start: BridgeEvent = serde_json::from_value(json!({
+    fn deserializes_stream_boundaries_and_deltas() {
+        let assistant_start: BridgeEvent = serde_json::from_value(json!({
             "type": "assistant_start",
             "id": 3
         }))
         .expect("assistant start should deserialize");
-        let delta: BridgeEvent = serde_json::from_value(json!({
+        let thinking_start: BridgeEvent = serde_json::from_value(json!({
+            "type": "thinking_start",
+            "id": 3,
+            "thinking_id": "3:1:0"
+        }))
+        .expect("thinking start should deserialize");
+        let thinking_delta: BridgeEvent = serde_json::from_value(json!({
+            "type": "thinking_delta",
+            "id": 3,
+            "thinking_id": "3:1:0",
+            "delta": "Considering..."
+        }))
+        .expect("thinking delta should deserialize");
+        let thinking_end: BridgeEvent = serde_json::from_value(json!({
+            "type": "thinking_end",
+            "id": 3,
+            "thinking_id": "3:1:0",
+            "content": "Considering the details."
+        }))
+        .expect("thinking end should deserialize");
+        let bash_delta: BridgeEvent = serde_json::from_value(json!({
             "type": "bash_delta",
             "id": 3,
             "delta": "running\n"
         }))
         .expect("bash delta should deserialize");
 
-        assert!(matches!(start, BridgeEvent::AssistantStart { id: 3 }));
         assert!(matches!(
-            delta,
+            assistant_start,
+            BridgeEvent::AssistantStart { id: 3 }
+        ));
+        assert!(matches!(
+            thinking_start,
+            BridgeEvent::ThinkingStart { id: 3, thinking_id } if thinking_id == "3:1:0"
+        ));
+        assert!(matches!(
+            thinking_delta,
+            BridgeEvent::ThinkingDelta {
+                id: 3,
+                thinking_id,
+                delta,
+            } if thinking_id == "3:1:0" && delta == "Considering..."
+        ));
+        assert!(matches!(
+            thinking_end,
+            BridgeEvent::ThinkingEnd {
+                id: 3,
+                thinking_id,
+                content,
+            } if thinking_id == "3:1:0" && content == "Considering the details."
+        ));
+        assert!(matches!(
+            bash_delta,
             BridgeEvent::BashDelta { id: 3, delta } if delta == "running\n"
         ));
     }

@@ -133,7 +133,7 @@ async function main() {
     agentDir: getAgentDir(),
     appendSystemPromptOverride: (base) => [
       ...base,
-      "Spigot displays assistant responses as plain text. Do not use Markdown formatting. Use ordinary sentences and line breaks instead of headings, list markers, emphasis, links, tables, inline code, or fenced code blocks.",
+      "Spigot displays all model output as plain text, including visible thinking and final responses. Do not use Markdown anywhere. Use ordinary sentences and line breaks instead of headings, list markers, emphasis, links, tables, inline code, or fenced code blocks.",
     ],
   });
   await resourceLoader.reload();
@@ -151,6 +151,7 @@ async function main() {
   }
 
   let activeRequestId = null;
+  let activeAssistantMessageId = 0;
   let activeError = null;
 
   function handleControlLine(line) {
@@ -181,10 +182,30 @@ async function main() {
     }
 
     if (event.type === "message_start" && event.message.role === "assistant") {
+      activeAssistantMessageId += 1;
       emit({ type: "assistant_start", id: activeRequestId });
     } else if (event.type === "message_update") {
       const update = event.assistantMessageEvent;
-      if (update.type === "text_delta") {
+      if (update.type === "thinking_start") {
+        const thinkingId = `${activeRequestId}:${activeAssistantMessageId}:${update.contentIndex}`;
+        emit({ type: "thinking_start", id: activeRequestId, thinking_id: thinkingId });
+      } else if (update.type === "thinking_delta") {
+        const thinkingId = `${activeRequestId}:${activeAssistantMessageId}:${update.contentIndex}`;
+        emit({
+          type: "thinking_delta",
+          id: activeRequestId,
+          thinking_id: thinkingId,
+          delta: update.delta,
+        });
+      } else if (update.type === "thinking_end") {
+        const thinkingId = `${activeRequestId}:${activeAssistantMessageId}:${update.contentIndex}`;
+        emit({
+          type: "thinking_end",
+          id: activeRequestId,
+          thinking_id: thinkingId,
+          content: update.content,
+        });
+      } else if (update.type === "text_delta") {
         emit({ type: "text_delta", id: activeRequestId, delta: update.delta });
       }
     } else if (event.type === "message_end" && event.message.role === "assistant") {
@@ -241,6 +262,7 @@ async function main() {
     }
 
     activeRequestId = id;
+    activeAssistantMessageId = 0;
     activeError = null;
 
     try {
@@ -275,6 +297,7 @@ async function main() {
       emit({ type: "error", id, message: errorMessage(error) });
     } finally {
       activeRequestId = null;
+      activeAssistantMessageId = 0;
       activeError = null;
     }
   }

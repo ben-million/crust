@@ -2,7 +2,7 @@
 
 A minimal desktop interface for the [Pi agent harness](https://pi.dev), built with [Dioxus](https://dioxuslabs.com/).
 
-The Rust UI keeps a Node.js sidecar alive over JSONL/stdin. The sidecar uses Pi's `@earendil-works/pi-coding-agent` SDK directly and streams assistant text and shell output back to Dioxus. It uses your existing Pi credentials and settings from `~/.pi/agent` and keeps the conversation in memory for the lifetime of the app.
+The Rust UI keeps a Node.js sidecar alive over JSONL/stdin. The sidecar uses Pi's `@earendil-works/pi-coding-agent` SDK directly and streams assistant text, thinking, tool activity, and shell output back to Dioxus. It uses your existing Pi credentials and settings from `~/.pi/agent` and keeps the conversation in memory for the lifetime of the app.
 
 ## Requirements
 
@@ -27,7 +27,7 @@ SPIGOT_NODE=/absolute/path/to/node cargo run
 SPIGOT_PROMPT_TIMEOUT_SECS=3600 cargo run
 ```
 
-Type a normal message to prompt Pi. Prefix input with `!` to run a shell command in the agent working directory; its output is added to Pi's context. Use `!!` to run a command without adding its output to the context. Commands run with the same permissions as Spigot.
+Type a normal message to prompt Pi. Thinking output appears when the selected model supports it and Pi's thinking level is not `off`. Prefix input with `!` to run a shell command in the agent working directory; its output is added to Pi's context. Use `!!` to run a command without adding its output to the context. Commands run with the same permissions as Spigot.
 
 ## Validate
 
